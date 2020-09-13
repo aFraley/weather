@@ -11,3 +11,5 @@ This is a command line tool to fetch weather data from NOAA API, based on your c
 ## Usage
 `weather` displays the current temperature.
 `weather --today-forecast` displays current temperature and today's forecast briefing
+`weather --verbose` displays current temperature and verbose extended forecast
+`weather --brief` displays current temperature and brief extended forecast
