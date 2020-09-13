@@ -1,6 +1,7 @@
 ### Weather
 ## Description
-This is a command line tool to fetch weather data from NOAA API, based on your configured location, and display it to your command line. 
+This is a command line tool to fetch weather data from NOAA API, based on your configured location, and display it to your command line.
+![](demo.gif)
 ## Installation
 1. Clone to a directory of your choice
 2. Create a virtual env and install dependencies
