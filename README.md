@@ -9,7 +9,7 @@ This is a command line tool to fetch weather data from NOAA API, based on your c
 5. Run `chmod +x weather.py` to make it executable for your user
 6. Add `weather=/path-to-weather.py` to .alias file
 ## Usage
-`weather` displays the current temperature.
-`weather --today-forecast` displays current temperature and today's forecast briefing
-`weather --verbose` displays current temperature and verbose extended forecast
-`weather --brief` displays current temperature and brief extended forecast
+- `weather` displays the current temperature.
+- `weather --today-forecast` displays current temperature and today's forecast briefing
+- `weather --verbose` displays current temperature and verbose extended forecast
+- `weather --brief` displays current temperature and brief extended forecast
