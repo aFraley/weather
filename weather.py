@@ -85,6 +85,7 @@ def fetch_data():
 
     return requests.get(URL)
 
+
 def main():
     parser = argparse.ArgumentParser(
         prog='weather',
@@ -95,12 +96,20 @@ def main():
     parser.add_argument('-b', '--brief', action='store_true', default=False, help='Extract and display today and tonight\'s forecast')
 
     args = parser.parse_args()
-    response = fetch_data()
-    dom = bs4.BeautifulSoup(response.content, features='html.parser')
-    current_temperature = extract_current_temperature(dom)
+    
+    try:
+        response = fetch_data()
+    except requests.ConnectionError:
+        response = None
+        print('\nUnable to connect to internet.\n')
 
-    print_current_temperature(current_temperature)
-    extract_and_display(dom, args)
+    if response is not None:
+        dom = bs4.BeautifulSoup(response.content, features='html.parser')
+        current_temperature = extract_current_temperature(dom)
+
+        print_current_temperature(current_temperature)
+        extract_and_display(dom, args)
+
 
 
 if __name__ == "__main__":
