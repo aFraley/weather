@@ -1,4 +1,5 @@
-#!/Users/alan/dev/weather_getter/venv/bin/python
+#!/home/alan/dev/weather/venv/bin/python
+
 import argparse
 import configparser
 from datetime import datetime
@@ -23,11 +24,23 @@ def extract_all_forecasts(dom):
 
 
 def extract_time_period(dom):
+    """For when API returns a single time period list""" 
     return dom.find('data', attrs={'type': 'forecast'}).find('time-layout').find('start-valid-time')
 
 
 def extract_all_time_periods(dom):
-    return dom.find('data', attrs={'type': 'forecast'}).find('time-layout').find_all('start-valid-time')
+    """For the more common case when API returns multiple time period lists"""
+
+    # We need to look closer here at what structures are coming across to increase efficiency
+    element = dom.find('data', attrs={'type': 'forecast'}).find('time-layout').find_all('start-valid-time')      # this works fine some times of day?
+
+    if len(element) == 1:
+        element = dom.find('data', attrs={'type': 'forecast'}).find_all('time-layout')
+        tp = element[1].find_all('start-valid-time')
+    else:
+        tp = element        # take the first extracted element DO WE NEED TO OR CAN WE JUST DO THIS? Depends on API response
+
+    return tp
 
 
 def print_current_temperature(temperature):
