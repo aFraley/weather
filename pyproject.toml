@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "weather"
+version = "1.0.0"
+description = "CLI tool to fetch and display weather data from the NWS API"
+requires-python = ">=3.8"
+dependencies = [
+    "requests",
+    "rich",
+]
+
+[project.scripts]
+weather = "weather:main"
