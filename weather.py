@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-MODULE_PATH = pathlib.Path(__file__).parent
+CONFIG_DIR = pathlib.Path.home() / ".config" / "weather"
 HEADERS = {"User-Agent": "(weather-cli, github.com/aFraley/weather)"}
 
 console = Console()
@@ -33,19 +33,15 @@ def degrees_to_compass(deg):
     return directions[idx]
 
 
-def fetch_current_observations(stations_url):
-    """Fetch current observations from the nearest observation station."""
+def fetch_current_observations(stations_url, preferred_station=None):
+    """Fetch current observations, trying multiple stations if needed."""
     resp = requests.get(stations_url, headers=HEADERS)
     resp.raise_for_status()
-    station = resp.json()["features"][0]["id"]
+    stations = [f["id"] for f in resp.json()["features"]]
 
-    obs_resp = requests.get(f"{station}/observations/latest", headers=HEADERS)
-    obs_resp.raise_for_status()
-    props = obs_resp.json()["properties"]
-
-    def val(key):
-        obj = props.get(key)
-        return obj["value"] if isinstance(obj, dict) else None
+    if preferred_station:
+        preferred_url = f"https://api.weather.gov/stations/{preferred_station}"
+        stations = [preferred_url] + [s for s in stations if s != preferred_url]
 
     def c_to_f(v):
         return round(v * 9 / 5 + 32) if v is not None else None
@@ -53,16 +49,34 @@ def fetch_current_observations(stations_url):
     def kmh_to_mph(v):
         return round(v * 0.621371) if v is not None else None
 
-    humidity_raw = val("relativeHumidity")
+    for station in stations[:5]:
+        obs_resp = requests.get(f"{station}/observations/latest", headers=HEADERS)
+        obs_resp.raise_for_status()
+        props = obs_resp.json()["properties"]
+
+        def val(key):
+            obj = props.get(key)
+            return obj["value"] if isinstance(obj, dict) else None
+
+        if val("temperature") is None:
+            continue
+
+        humidity_raw = val("relativeHumidity")
+
+        return {
+            "temperature": c_to_f(val("temperature")),
+            "humidity": round(humidity_raw) if humidity_raw is not None else None,
+            "wind_speed": kmh_to_mph(val("windSpeed")),
+            "wind_direction": degrees_to_compass(val("windDirection")),
+            "wind_gust": kmh_to_mph(val("windGust")),
+            "dewpoint": c_to_f(val("dewpoint")),
+            "conditions": props.get("textDescription") or None,
+        }
 
     return {
-        "temperature": c_to_f(val("temperature")),
-        "humidity": round(humidity_raw) if humidity_raw is not None else None,
-        "wind_speed": kmh_to_mph(val("windSpeed")),
-        "wind_direction": degrees_to_compass(val("windDirection")),
-        "wind_gust": kmh_to_mph(val("windGust")),
-        "dewpoint": c_to_f(val("dewpoint")),
-        "conditions": props.get("textDescription") or None,
+        "temperature": None, "humidity": None, "wind_speed": None,
+        "wind_direction": None, "wind_gust": None, "dewpoint": None,
+        "conditions": None,
     }
 
 
@@ -124,7 +138,14 @@ def display_forecast(periods):
 
 def setup_configuration():
     config = configparser.ConfigParser()
-    config.read(f"{MODULE_PATH.absolute()}/config.ini")
+    config_file = CONFIG_DIR / "config.ini"
+    if not config_file.exists():
+        console.print(f"[red]Error: Config file not found at {config_file}[/red]")
+        console.print(f"Create it with your latitude and longitude:")
+        console.print(f"  mkdir -p {CONFIG_DIR}")
+        console.print(f"  Copy config.ini.example to {config_file}")
+        sys.exit(1)
+    config.read(config_file)
     return config
 
 
@@ -153,8 +174,10 @@ def main():
         lat = config["location"]["latitude"]
         lon = config["location"]["longitude"]
 
+        station = config["location"].get("station")
+
         forecast_url, stations_url = fetch_points(lat, lon)
-        obs = fetch_current_observations(stations_url)
+        obs = fetch_current_observations(stations_url, preferred_station=station)
         display_current_conditions(obs)
 
         if args.verbose:
